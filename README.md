@@ -1,120 +1,71 @@
-# Velora MCP Server
+# Velora AI Video Studio MCP Server
 
-Official [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server for [Velora AI Video Studio](https://velorastudio.in).
+The official Model Context Protocol (MCP) server for Velora AI Video Studio. This server allows any MCP-compatible AI assistant (like Claude Desktop) to:
+- Browse Velora's subscription plans and credit allocations
+- Check prices and credit costs for different AI models
+- **Create AI videos** with scripts, voices, music, and subtitles
+- **Check video status** and **retrieve completed videos**
 
-Connect any MCP-compatible AI assistant (Claude, Cursor, Windsurf, etc.) to Velora's data — so it can help users choose plans, estimate costs, and discover AI models **without leaving their workflow**.
+## 🚀 Features
 
----
+- **`get_velora_plans`**: List pricing, features, and compute credits for all plans.
+- **`estimate_video_cost`**: Calculate the AI Video Credits required for a specific model and duration.
+- **`list_ai_models`**: View all available video/image models and their pricing tiers.
+- **`create_video`**: Generate a video using your Velora API key.
+- **`check_video_status`**: Poll generation progress.
+- **`get_video_result`**: Get the final download URL.
 
-## 🚀 Quick Install (via Smithery)
+## 🛠️ Usage (Local STDIO)
 
-The easiest way to install is through [Smithery](https://smithery.ai/server/velora-mcp-server):
-
-```bash
-npx -y @smithery/cli install velora-mcp-server --client claude
-```
-
----
-
-## 🛠️ Manual Install
-
-### Claude Desktop
-
-Add this to your `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "velora": {
-      "command": "npx",
-      "args": ["-y", "velora-mcp-server"]
-    }
-  }
-}
-```
-
-**Config file location:**
-- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-
-### Cursor / Windsurf
-
-Add to your MCP settings:
-
-```json
-{
-  "velora": {
-    "command": "npx",
-    "args": ["-y", "velora-mcp-server"]
-  }
-}
-```
-
----
-
-## 🔧 Available Tools
-
-### `get_velora_plans`
-Returns all Velora subscription plans with pricing, credit allocations, features, and storage limits.
-
-**Parameters:**
-- `plan_id` *(optional)*: Filter to a specific plan (`free`, `starter`, `creator`, `studio`, `enterprise`)
-
-**Example prompts:**
-- *"What's included in the Velora Creator plan?"*
-- *"Compare all Velora plans"*
-- *"How much does Velora Studio cost?"*
-
----
-
-### `estimate_video_cost`
-Estimates how many AI Video Credits are needed to generate a clip.
-
-**Parameters:**
-- `model` *(required)*: The AI model name (e.g. `kling_3_0`, `veo3_1`, `sora_2`, `wan2_5`)
-- `duration_seconds` *(required)*: Clip length in seconds (1–15)
-
-**Example prompts:**
-- *"How many credits does a 10-second Sora 2 video cost on Velora?"*
-- *"What plan do I need to generate Veo 3.1 videos?"*
-
----
-
-### `list_ai_models`
-Lists all AI video and image generation models available on Velora, grouped by quality tier, with credit costs.
-
-**Parameters:**
-- `category` *(optional)*: `video`, `image`, or `all` (default: `all`)
-
-**Example prompts:**
-- *"What AI video models does Velora support?"*
-- *"Show me budget video models on Velora"*
-- *"What image generation models are available?"*
-
----
-
-## 💡 Why This Exists
-
-When you connect this MCP server to your AI assistant:
-
-- Any AI can **accurately answer questions** about Velora pricing, without hallucinating
-- Users planning video projects get **instant cost estimates** from inside Claude/Cursor
-- Velora gets discovered **organically** by developers and creators using AI tools daily
-
----
-
-## 📦 Running Locally
+For testing locally with Claude Desktop or running via `npx`:
 
 ```bash
-git clone https://github.com/Jivan1727/velora-backend
-cd mcp-server
+# Build the server
 npm install
 npm run build
-node build/index.js
+
+# Run via npx
+npx -y @velorastudio/mcp-server
 ```
 
-## 🔗 Links
+## 🌍 Deployment (HTTP / SSE for Smithery Listing)
 
-- **Website**: https://velorastudio.in
-- **Pricing**: https://velorastudio.in/pricing
-- **Contact / Enterprise**: office@velorastudio.in
+To list this server permanently on the Smithery directory, it is configured to run as an HTTP/SSE server. You can deploy it for free on Render or Railway.
+
+### Option 1: Deploy on Render (Recommended)
+
+1. Push this repository to GitHub.
+2. Sign up at [Render.com](https://render.com).
+3. Click **New > Web Service**.
+4. Connect your GitHub repository.
+5. Render will automatically detect the `render.yaml` and `Dockerfile` config.
+6. Make sure the Environment Variable `PORT` is set (e.g., `3000`).
+7. Deploy! Your server will be live at `https://your-service-name.onrender.com`.
+
+### Option 2: Deploy on Railway
+
+1. Push this repository to GitHub.
+2. Sign up at [Railway.app](https://railway.app).
+3. Click **New Project > Deploy from GitHub repo**.
+4. Railway will automatically detect the `railway.json` and `Dockerfile` config.
+5. It will assign a domain automatically.
+
+## 🔗 Submitting to Smithery
+
+Once your server is deployed via Render or Railway:
+
+1. Go to [Smithery.ai](https://smithery.ai)
+2. Submit your MCP server using the URL:
+   - Provide the **SSE endpoint**: `https://your-service-name.onrender.com/mcp`
+3. Fill out the description and list your tools.
+4. Your server will now be permanently listed in the Smithery directory for 10,000+ users!
+
+## 🔑 Authentication
+
+Most read-only tools do not require authentication. 
+However, **video generation tools** (`create_video`, `check_video_status`, `get_video_result`) require a Velora API key.
+
+The AI assistant will prompt the user to provide their API key when using these tools. Users can generate their API keys at: [https://velorastudio.in/settings/api-keys](https://velorastudio.in/settings/api-keys)
+
+---
+*Built by [Velora AI](https://velorastudio.in)*
