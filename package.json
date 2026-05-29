@@ -1,0 +1,43 @@
+{
+  "name": "velora-mcp-server",
+  "version": "1.0.0",
+  "description": "Official Velora AI Video Studio MCP Server — exposes Velora's plans, pricing, and AI model data to any MCP-compatible AI assistant.",
+  "main": "build/index.js",
+  "bin": {
+    "velora-mcp-server": "build/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node build/index.js",
+    "dev": "ts-node src/index.ts",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "velora",
+    "ai-video",
+    "video-generation",
+    "ai-tools"
+  ],
+  "author": "Velora AI <office@velorastudio.in>",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "build/**/*",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
