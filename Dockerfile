@@ -6,7 +6,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (including devDependencies for TypeScript)
-RUN npm install
+RUN npm install --ignore-scripts
 
 # Copy source code
 COPY . .
@@ -24,7 +24,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install only production dependencies
-RUN npm install --production
+RUN npm install --production --ignore-scripts
 
 # Copy built artifacts from builder
 COPY --from=builder /app/build ./build
