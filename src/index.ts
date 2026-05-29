@@ -398,6 +398,79 @@ server.tool(
   }
 );
 
+// ─── Tool: generate_video ─────────────────────────────────────────────────────
+server.tool(
+  "generate_video",
+  "Generate an AI video using Velora's API. Note: requires a valid Velora API key.",
+  {
+    api_key: z
+      .string()
+      .describe("Your Velora API key (obtain from https://velorastudio.in/settings/integrations)."),
+    prompt: z
+      .string()
+      .describe("The prompt or script for your video. Be descriptive."),
+    model: z
+      .string()
+      .optional()
+      .default("veo3_1_fast")
+      .describe("The AI video model to use. Defaults to veo3_1_fast."),
+    duration_minutes: z
+      .number()
+      .optional()
+      .default(1)
+      .describe("Target duration of the video in minutes (e.g., 0.5 for 30s, 1 for 60s)."),
+  },
+  async ({ api_key, prompt, model, duration_minutes }) => {
+    try {
+      const response = await fetch("https://api.velorastudio.in/api/videos/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${api_key}`,
+        },
+        body: JSON.stringify({
+          prompt,
+          model,
+          target_duration_minutes: duration_minutes,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Failed to generate video: ${data.detail || data.message || response.statusText}\n\nMake sure your API key is valid and you have enough credits at https://velorastudio.in`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `🎬 **Video Generation Started Successfully!**\n\n**Video ID:** ${data.video_id}\n**Status:** Processing\n\nYou can track the progress of your video in your Velora dashboard:\nhttps://velorastudio.in/dashboard`,
+          },
+        ],
+      };
+    } catch (error: any) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Error connecting to Velora API: ${error.message}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+);
+
 // ─── Start server ─────────────────────────────────────────────────────────────
 async function main() {
   const transport = new StdioServerTransport();

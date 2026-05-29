@@ -2,6 +2,6 @@ startCommand:
   type: stdio
   commandFunction: |-
     () => ({
-      command: "npx",
-      args: ["-y", "velora-mcp-server"]
+      command: "node",
+      args: ["build/index.js"]
     })
