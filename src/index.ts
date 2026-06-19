@@ -415,10 +415,58 @@ ${p.features.map((f) => `  - ${f}`).join("\n")}`;
     }
   );
 
+  // ─── Tool: list_voices ───────────────────────────────────────────────────
+  server.tool(
+    "list_voices",
+    "List available voices for a given language and voice tier. Use this to show the user the available voices so they can select one.",
+    {
+      language: z.string().optional().default("en").describe("Language code (e.g., 'en', 'hi', 'es'). Defaults to 'en'."),
+      voice_tier: z.enum(["standard", "enhanced", "premium"]).optional().default("standard").describe("The voice tier to list voices for."),
+    },
+    async ({ language, voice_tier }) => {
+      try {
+        const response = await fetch(`${VELORA_API_BASE}/api/voices/?language=${language}&model=${voice_tier}`, {
+          method: "GET",
+        });
+
+        const data: any = await response.json();
+
+        if (!response.ok) {
+          return {
+            content: [{ type: "text", text: `❌ Could not fetch voices: ${data?.detail || response.statusText}` }],
+            isError: true,
+          };
+        }
+
+        const voices = data.voices || [];
+        if (voices.length === 0) {
+          return {
+            content: [{ type: "text", text: `No voices found for language '${language}' in tier '${voice_tier}'.` }],
+          };
+        }
+
+        const lines = [
+          `# Available Voices (${language.toUpperCase()} - ${voice_tier.toUpperCase()})`,
+          ``,
+          ...voices.map((v: any) => `- **${v.name}** (${v.gender || "Unknown"}) -> ID: \`${v.voice_id}\``),
+          ``,
+          `Ask the user to select a voice by ID.`,
+        ];
+
+        return { content: [{ type: "text", text: lines.join("\n") }] };
+      } catch (error: any) {
+        return {
+          content: [{ type: "text", text: `❌ Network error: ${error.message}` }],
+          isError: true,
+        };
+      }
+    }
+  );
+
   // ─── Tool: create_video ───────────────────────────────────────────────────
   server.tool(
     "create_video",
-    "🎬 Create a full AI-generated video using Velora AI Video Studio. Provide a topic or script, choose language, voice type, aspect ratio, subtitle options, and video model. Returns a video_id you can use with check_video_status and get_video_result. Requires a valid Velora API key from https://velorastudio.in/settings/api-keys",
+    "🎬 Create a full AI-generated video using Velora AI Video Studio. Returns a video_id you can use with check_video_status. Requires a valid Velora API key.\n\nCRITICAL RULE: Before calling this tool, you MUST ask the user to confirm their choices for: 1. Duration, 2. Media Mix, 3. Language, 4. Export Resolution, 5. Subtitle Style, 6. BGM Mood, 7. Voice Tier. ONCE they select a Voice Tier, you MUST use the list_voices tool to show them the available voices for that tier, and ask them to pick one (Voice ID). You CANNOT assume defaults for these!",
     {
       api_key: z
         .string()
@@ -451,12 +499,25 @@ ${p.features.map((f) => `  - ${f}`).join("\n")}`;
         .describe(
           "Aspect ratio for the video. 16:9 for YouTube/landscape, 9:16 for TikTok/Reels/Shorts (portrait), 1:1 for Instagram square."
         ),
+      resolution: z
+        .enum(["720p", "1080p", "1440p", "4k"])
+        .optional()
+        .default("1080p")
+        .describe(
+          "Export resolution quality of the video."
+        ),
       voice_type: z
         .enum(["standard", "enhanced", "premium"])
         .optional()
         .default("enhanced")
         .describe(
-          "Voice quality for narration. 'standard' = basic TTS (free), 'enhanced' = high-quality neural voice (Starter+), 'premium' = ElevenLabs ultra-realistic voice (uses ElevenLabs minutes)."
+          "Voice quality tier for narration. 'standard' = basic TTS (free), 'enhanced' = high-quality neural voice (Starter+), 'premium' = ElevenLabs ultra-realistic voice (uses ElevenLabs minutes)."
+        ),
+      voice_id: z
+        .string()
+        .optional()
+        .describe(
+          "The ID of the specific voice to use. You MUST get this by using the list_voices tool after the user selects a voice tier!"
         ),
       video_model: z
         .string()
@@ -486,12 +547,27 @@ ${p.features.map((f) => `  - ${f}`).join("\n")}`;
         .describe(
           "Overall style/theme of the video. 'auto' lets Velora AI choose the best style for your topic."
         ),
+      media_mix: z
+        .enum(["mixed", "stock_only", "ai_only"])
+        .optional()
+        .default("mixed")
+        .describe(
+          "Controls the type of visuals used in the video. 'mixed' uses both. 'stock_only' uses 100% stock footage (no AI generation). 'ai_only' uses 100% AI generated video clips."
+        ),
       script: z
         .string()
         .optional()
         .describe(
           "Optional: provide your own pre-written script/narration text. If omitted, Velora AI will auto-generate a script from your topic."
         ),
+      voice_tone: z
+        .string()
+        .optional()
+        .describe("The preferred tone or gender of the voiceover (e.g. 'Deep male voice'). Use voice_id instead if the user picked a specific voice!"),
+      bgm_mood: z
+        .string()
+        .optional()
+        .describe("The preferred mood or genre for background music (e.g. 'cinematic', 'upbeat', 'lofi', 'ambient', 'suspenseful')."),
       include_background_music: z
         .boolean()
         .optional()
@@ -505,32 +581,36 @@ ${p.features.map((f) => `  - ${f}`).join("\n")}`;
         ),
     },
     async ({
-      api_key, topic, language, duration_minutes, aspect_ratio, voice_type,
-      video_model, include_subtitles, subtitle_style, video_style, script,
-      include_background_music, webhook_url,
+      api_key, topic, language, duration_minutes, aspect_ratio, resolution, voice_type, voice_id,
+      video_model, include_subtitles, subtitle_style, video_style, media_mix, script,
+      voice_tone, bgm_mood, include_background_music, webhook_url,
     }) => {
       try {
         const payload: Record<string, unknown> = {
           topic,
           language,
-          target_duration_minutes: duration_minutes,
+          duration_minutes,
+          theme: video_style === "auto" ? "documentary" : video_style,
           aspect_ratio,
-          voice_type,
-          video_model,
-          include_subtitles,
+          resolution,
+          media_mix,
+          subtitles: include_subtitles ? "burned" : "off",
           subtitle_style,
-          video_style,
-          include_background_music,
+          voice_model: voice_type,
         };
 
+        if (voice_id) payload.voice_id = voice_id;
+        if (voice_tone) payload.voice_tone = voice_tone;
+        if (bgm_mood && include_background_music) payload.bgm_mood = bgm_mood;
+        if (!include_background_music) payload.bgm_mood = "none";
         if (script) payload.script = script;
         if (webhook_url) payload.webhook_url = webhook_url;
 
-        const response = await fetch(`${VELORA_API_BASE}/api/videos/generate`, {
+        const response = await fetch(`${VELORA_API_BASE}/v1/videos/generate`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${api_key}`,
+            "X-API-Key": api_key,
           },
           body: JSON.stringify(payload),
         });
@@ -538,7 +618,9 @@ ${p.features.map((f) => `  - ${f}`).join("\n")}`;
         const data: any = await response.json();
 
         if (!response.ok) {
-          const errorMsg = data?.detail || data?.message || response.statusText;
+          const errorMsg = typeof data?.detail === 'string' 
+            ? data.detail 
+            : JSON.stringify(data?.detail || data?.message || response.statusText);
           return {
             content: [
               {
@@ -617,11 +699,11 @@ ${p.features.map((f) => `  - ${f}`).join("\n")}`;
     async ({ api_key, video_id }) => {
       try {
         const response = await fetch(
-          `${VELORA_API_BASE}/api/videos/${video_id}`,
+          `${VELORA_API_BASE}/v1/videos/${video_id}`,
           {
             method: "GET",
             headers: {
-              "Authorization": `Bearer ${api_key}`,
+              "X-API-Key": api_key,
             },
           }
         );
@@ -725,11 +807,11 @@ ${p.features.map((f) => `  - ${f}`).join("\n")}`;
     async ({ api_key, video_id }) => {
       try {
         const response = await fetch(
-          `${VELORA_API_BASE}/api/videos/${video_id}`,
+          `${VELORA_API_BASE}/v1/videos/${video_id}`,
           {
             method: "GET",
             headers: {
-              "Authorization": `Bearer ${api_key}`,
+              "X-API-Key": api_key,
             },
           }
         );

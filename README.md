@@ -20,13 +20,35 @@ The official Model Context Protocol (MCP) server for Velora AI Video Studio. Thi
 For testing locally with Claude Desktop or running via `npx`:
 
 ```bash
-# Build the server
+# Build the server locally
 npm install
 npm run build
 
-# Run via npx
-npx -y @velorastudio/mcp-server
+# Or run instantly via npx (No installation needed!)
+npx -y velora-mcp-server
 ```
+
+## 🤖 Adding to Claude Desktop
+
+To easily integrate Velora Video Studio into Claude Desktop, add this block to your `claude_desktop_config.json`:
+
+**Mac:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "velora": {
+      "command": "npx",
+      "args": ["-y", "velora-mcp-server@latest"]
+    }
+  }
+}
+```
+
+Restart Claude Desktop, and you'll be able to create videos right from your chat!
+
+
 
 ## 🌍 Deployment (HTTP / SSE for Smithery Listing)
 

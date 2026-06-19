@@ -1,6 +1,6 @@
 {
   "name": "velora-mcp-server",
-  "version": "1.0.0",
+  "version": "1.1.7",
   "description": "Official Velora AI Video Studio MCP Server — exposes Velora's plans, pricing, and AI model data to any MCP-compatible AI assistant.",
   "main": "build/index.js",
   "bin": {
@@ -9,8 +9,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node build/index.js",
-    "dev": "ts-node src/index.ts",
-    "prepare": "npm run build"
+    "dev": "ts-node src/index.ts"
   },
   "keywords": [
     "mcp",
@@ -23,7 +22,7 @@
   "author": "Velora AI <office@velorastudio.in>",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "express": "^5.2.1",
     "zod": "^4.4.3"
   },
